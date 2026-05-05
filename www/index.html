@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#16a34a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Kutsaga" />
+
+    <!-- SECURITY HEADERS -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="Permissions-Policy" content="camera=(self), geolocation=(self)" />
+
+    <!-- PERFORMANCE: Preconnect to CDNs -->
+    <link rel="preconnect" href="https://unpkg.com" crossorigin />
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+    <link rel="dns-prefetch" href="https://nominatim.openstreetmap.org" />
+
+    <title>Kutsaga Field Operations</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background-color: #f9fafb;
+            overscroll-behavior-y: contain;
+            /* PERFORMANCE: Hardware acceleration */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+        }
+        #root {
+            min-height: 100vh;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+        input, select, textarea {
+            font-size: 16px;
+        }
+        button {
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-family: inherit;
+            /* PERFORMANCE: Better touch response */
+            -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+            touch-action: manipulation;
+        }
+
+        /* Utility classes */
+        .min-h-screen { min-height: 100vh; }
+        .bg-gray-50 { background-color: #f9fafb; }
+        .bg-white { background-color: white; }
+        .bg-green-700 { background-color: #15803d; }
+        .bg-green-600 { background-color: #16a34a; }
+        .bg-green-50 { background-color: #f0fdf4; }
+        .bg-blue-600 { background-color: #2563eb; }
+        .bg-blue-50 { background-color: #eff6ff; }
+        .bg-orange-50 { background-color: #fff7ed; }
+        .bg-purple-50 { background-color: #faf5ff; }
+        .bg-gray-600 { background-color: #4b5563; }
+        .bg-gray-200 { background-color: #e5e7eb; }
+        .bg-gray-100 { background-color: #f3f4f6; }
+        .bg-red-50 { background-color: #fef2f2; }
+        .bg-yellow-50 { background-color: #fefce8; }
+        .bg-indigo-50 { background-color: #eef2ff; }
+
+        .text-white { color: white; }
+        .text-gray-800 { color: #1f2937; }
+        .text-gray-700 { color: #374151; }
+        .text-gray-600 { color: #4b5563; }
+        .text-gray-500 { color: #6b7280; }
+        .text-green-700 { color: #15803d; }
+        .text-green-600 { color: #16a34a; }
+        .text-blue-700 { color: #1d4ed8; }
+        .text-blue-600 { color: #2563eb; }
+        .text-orange-700 { color: #c2410c; }
+        .text-orange-600 { color: #ea580c; }
+        .text-purple-700 { color: #7e22ce; }
+        .text-purple-600 { color: #9333ea; }
+        .text-red-500 { color: #ef4444; }
+        .text-red-600 { color: #dc2626; }
+        .text-yellow-700 { color: #a16207; }
+        .text-indigo-700 { color: #4338ca; }
+
+        .p-4 { padding: 1rem; }
+        .p-3 { padding: 0.75rem; }
+        .p-2 { padding: 0.5rem; }
+        .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+
+        .m-4 { margin: 1rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mt-4 { margin-top: 1rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded { border-radius: 0.25rem; }
+        .rounded-full { border-radius: 9999px; }
+
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); }
+
+        .flex { display: flex; }
+        .grid { display: grid; }
+
+        .items-center { align-items: center; }
+        .items-start { align-items: flex-start; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .gap-1 { gap: 0.25rem; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+
+        .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+        .flex-col { flex-direction: column; }
+        .w-full { width: 100%; }
+
+        .max-w-md { max-width: 28rem; }
+
+        .font-bold { font-weight: 700; }
+        .font-semibold { font-weight: 600; }
+        .font-medium { font-weight: 500; }
+
+        .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+        .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+        .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+        .text-xs { font-size: 0.75rem; line-height: 1rem; }
+        .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+        .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+        .text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+
+        .cursor-pointer { cursor: pointer; }
+        .opacity-90 { opacity: 0.9; }
+        .opacity-75 { opacity: 0.75; }
+
+        .hover\:bg-gray-50:hover { background-color: #f9fafb; }
+        .hover\:bg-green-700:hover { background-color: #15803d; }
+
+        .text-center { text-align: center; }
+
+        .border { border: 1px solid #d1d5db; }
+        .border-2 { border-width: 2px; }
+        .border-dashed { border-style: dashed; }
+        .border-gray-300 { border-color: #d1d5db; }
+        .border-b { border-bottom: 1px solid #e5e7eb; }
+        .border-t { border-top: 1px solid #d1d5db; }
+
+        select, input, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            background: white;
+        }
+
+        textarea {
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .hidden { display: none; }
+
+        .photo-preview {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+        }
+
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .top-0 { top: 0; }
+        .right-0 { right: 0; }
+
+        .overflow-y-auto { overflow-y: auto; }
+        .overflow-x-auto { overflow-x: auto; }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+        // SECURITY: Input sanitization helper
+        const sanitizeInput = (input) => {
+            if (typeof input !== 'string') return input;
+            return input.replace(/[<>'"]/g, '').trim();
+        };
+
+        // SECURITY: File validation
+        const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+        const validateImageFile = (file) => {
+            if (!file) return { valid: false, error: 'No file selected' };
+            if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+                return { valid: false, error: 'Only JPEG, PNG, and WebP images allowed' };
+            }
+            if (file.size > MAX_FILE_SIZE) {
+                return { valid: false, error: 'File must be less than 5MB' };
+            }
+            return { valid: true };
+        };
+
+        function App() {
+            const [currentScreen, setCurrentScreen] = useState('home');
+            const [activities, setActivities] = useState([
+                {
+                    id: '1',
+                    category: 'Grower Interactions',
+                    description: 'Visited farmer John Banda in Ward 5 to assess crop health and provide technical advice on pest management',
+                    date: new Date().toISOString().split('T')[0],
+                    time: '10:23',
+                    location: 'Ward 5, Harare',
+                    gps: { lat: -17.8252, lon: 31.0335 },
+                    photos: [],
+                    expenses: [
+                        { id: '1', type: 'Fuel', amount: 45, unit: 'Litres', quantity: 25, notes: 'Trip to Ward 5' }
+                    ],
+                    synced: true
+                },
+                {
+                    id: '2',
+                    category: 'Trials / Experiments',
+                    description: 'Monitoring tobacco trial plot 3A for disease resistance testing',
+                    date: new Date().toISOString().split('T')[0],
+                    time: '14:45',
+                    location: 'Kutsaga Research Station',
+                    gps: { lat: -17.8156, lon: 31.0456 },
+                    photos: [],
+                    expenses: [
+                        { id: '2', type: 'Inputs/Materials', amount: 120, notes: 'Trial supplies' },
+                        { id: '3', type: 'Transport', amount: 30, notes: 'Local transport' }
+                    ],
+                    synced: true
+                }
+            ]);
+
+            const [newActivity, setNewActivity] = useState({
+                category: 'Grower Interactions',
+                description: '',
+                date: new Date().toISOString().split('T')[0],
+                time: new Date().toTimeString().slice(0, 5),
+                location: 'Detecting location...',
+                gps: null,
+                photos: [],
+                expenses: []
+            });
+
+            const [newExpense, setNewExpense] = useState({
+                type: 'Fuel',
+                amount: '',
+                unit: 'Litres',
+                quantity: '',
+                notes: ''
+            });
+
+            const handleExpenseChange = useCallback((field) => (e) => {
+                const value = e.target.value;
+                setNewExpense(prev => ({ ...prev, [field]: value }));
+            }, []);
+
+            const handleActivityChange = useCallback((field) => (e) => {
+                const value = e.target.value;
+                setNewActivity(prev => ({ ...prev, [field]: value }));
+            }, []);
+
+            const [isAddingExpense, setIsAddingExpense] = useState(false);
+            const fileInputRef = useRef(null);
+            const cameraInputRef = useRef(null);
+            const hasGeocodedRef = useRef(false);
+            const descriptionRef = useRef(null);
+            const expenseQuantityRef = useRef(null);
+            const expenseAmountRef = useRef(null);
+            const expenseNotesRef = useRef(null);
+
+            useEffect(() => {
+                if (navigator.geolocation && !hasGeocodedRef.current) {
+                    setNewActivity(prev => ({ ...prev, location: 'Getting location...' }));
+
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const { latitude, longitude } = position.coords;
+                            setNewActivity(prev => ({
+                                ...prev,
+                                gps: { lat: latitude, lon: longitude },
+                                location: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+                            }));
+
+                            if (!hasGeocodedRef.current) {
+                                hasGeocodedRef.current = true;
+                                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`, {
+                                    headers: { 'User-Agent': 'KutsagaFieldOps/1.0' }
+                                })
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        if (data.display_name) {
+                                            const addressParts = data.display_name.split(',');
+                                            const shortAddress = addressParts.slice(0, 3).join(',').trim();
+                                            setNewActivity(prev => ({ ...prev, location: shortAddress }));
+                                        }
+                                    })
+                                    .catch(err => console.log('Geocoding error:', err));
+                            }
+                        },
+                        (error) => {
+                            console.error('GPS error:', error);
+                            let errorMsg = 'Location unavailable';
+                            switch(error.code) {
+                                case error.PERMISSION_DENIED:
+                                    errorMsg = 'Location permission denied. Please enable in settings.';
+                                    break;
+                                case error.POSITION_UNAVAILABLE:
+                                    errorMsg = 'Location information unavailable';
+                                    break;
+                                case error.TIMEOUT:
+                                    errorMsg = 'Location request timed out';
+                                    break;
+                            }
+                            setNewActivity(prev => ({ ...prev, location: errorMsg, gps: null }));
+                            if (error.code === error.PERMISSION_DENIED) {
+                                setTimeout(() => {
+                                    alert('Location access was denied. Please:\n1. Go to your phone Settings\n2. Allow location access for this app\n3. Restart the app');
+                                }, 1000);
+                            }
+                        },
+                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                    );
+                } else {
+                    setNewActivity(prev => ({ ...prev, location: 'Geolocation not supported' }));
+                }
+            }, []);
+
+            const weekSummary = useMemo(() => {
+                const totalExpenses = activities.reduce((sum, act) =>
+                    sum + act.expenses.reduce((s, e) => s + e.amount, 0), 0
+                );
+                const growerActivities = activities.filter(a => a.category === 'Grower Interactions').length;
+                return {
+                    activities: activities.length,
+                    growers: growerActivities,
+                    expenses: totalExpenses,
+                    kpiProgress: 75
+                };
+            }, [activities]);
+
+            const [kpis, setKPIs] = useState([
+                {
+                    id: 'kpi_001',
+                    performanceArea: 'IMPROVED GROWER CAPACITY',
+                    indicator: 'Research trials conducted',
+                    measureUnit: 'Number',
+                    weight: 10,
+                    quarters: {
+                        Q1: { target: 11, allowableVariance: 1, actualPerformance: 0, rawScore: 0, weightedScore: 0 },
+                        Q2: { target: 12, allowableVariance: 1, actualPerformance: 0, rawScore: 0, weightedScore: 0 },
+                        Q3: { target: 10, allowableVariance: 1, actualPerformance: 0, rawScore: 0, weightedScore: 0 },
+                        Q4: { target: 15, allowableVariance: 2, actualPerformance: 0, rawScore: 0, weightedScore: 0 }
+                    },
+                    trackingConfig: {
+                        categories: ['Trials / Experiments'],
+                        keywords: ['trial', 'curing', 'research']
+                    }
+                },
+                {
+                    id: 'kpi_002',
+                    performanceArea: 'IMPROVED GROWER CAPACITY',
+                    indicator: 'Grower engagements/trainings',
+                    measureUnit: 'Number',
+                    weight: 10,
+                    quarters: {
+                        Q1: { target: 10, allowableVariance: 1, actualPerformance: 0, rawScore: 0, weightedScore: 0 },
+                        Q2: { target: 12, allowableVariance: 1, actualPerformance: 0, rawScore: 0, weightedScore: 0 },
+                        Q3: { target: 15, allowableVariance: 2, actualPerformance: 0, rawScore: 0, weightedScore: 0 },
+                        Q4: { target: 18, allowableVariance: 2, actualPerformance: 0, rawScore: 0, weightedScore: 0 }
+                    },
+                    trackingConfig: {
+                        categories: ['Trainings', 'Grower Interactions'],
+                        keywords: ['training', 'seminar', 'engagement', 'grower']
+                    }
+                },
+                {
+                    id: 'kpi_003',
+                    performanceArea: 'CRITICAL SUCCESS FACTORS',
+                    indicator: 'Innovative technologies developed',
+                    measureUnit: 'Number',
+                    weight: 10,
+                    quarters: {
+                        Q1: { target: 2, allowableVariance: 1, actualPerformance: 0, rawScore: 0, weightedScore: 0 },
+                        Q2: { target: 3, allowableVariance: 1, actualPerformance: 0, rawScore: 0, weightedScore: 0 },
+                        Q3: { target: 2, allowableVariance: 1, actualPerformance: 0, rawScore: 0, weightedScore: 0 },
+                        Q4: { target: 3, allowableVariance: 1, actualPerformance: 0, rawScore: 0, weightedScore: 0 }
+                    },
+                    trackingConfig: {
+                        categories: ['Research', 'Trials / Experiments'],
+                        keywords: ['technology', 'innovative', 'equipment', 'design']
+                    }
+                }
+            ]);
+
+            const [showKPISetup, setShowKPISetup] = useState(false);
+
+            const getCurrentQuarter = () => {
+                const month = new Date().getMonth() + 1;
+                if (month >= 1 && month <= 3) return 'Q1';
+                if (month >= 4 && month <= 6) return 'Q2';
+                if (month >= 7 && month <= 9) return 'Q3';
+                return 'Q4';
+            };
+
+            const calculateRawScore = (target, allowableVariance, actualPerformance) => {
+                const t = target;
+                const av = allowableVariance;
+                const ap = actualPerformance;
+                if (ap === 0) return 1;
+                if (ap > t + av) return 6;
+                if (ap > t && ap <= t + av) return 5;
+                if (ap === t) return 4;
+                if (ap >= t - av && ap < t) return 3;
+                if (ap < t - av) return 2;
+                return 4;
+            };
+
+            const updateKPIsFromActivity = (activity) => {
+                const currentQuarter = getCurrentQuarter();
+                setKPIs(prevKPIs => prevKPIs.map(kpi => {
+                    const matches = kpi.trackingConfig.categories.includes(activity.category) ||
+                                   kpi.trackingConfig.keywords.some(keyword =>
+                                       activity.description.toLowerCase().includes(keyword.toLowerCase())
+                                   );
+                    if (matches) {
+                        const qData = kpi.quarters[currentQuarter];
+                        const newAP = qData.actualPerformance + 1;
+                        const newRS = calculateRawScore(qData.target, qData.allowableVariance, newAP);
+                        const newWS = (kpi.weight / 100) * newRS;
+                        return {
+                            ...kpi,
+                            quarters: {
+                                ...kpi.quarters,
+                                [currentQuarter]: {
+                                    ...qData,
+                                    actualPerformance: newAP,
+                                    rawScore: newRS,
+                                    weightedScore: newWS
+                                }
+                            }
+                        };
+                    }
+                    return kpi;
+                }));
+            };
+
+            const handlePhotoCapture = (e) => {
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                    Array.from(files).forEach(file => {
+                        const validation = validateImageFile(file);
+                        if (!validation.valid) {
+                            alert(validation.error);
+                            return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            setNewActivity(prev => ({
+                                ...prev,
+                                photos: [...prev.photos, {
+                                    id: Date.now() + Math.random(),
+                                    url: event.target.result,
+                                    file: file,
+                                    timestamp: new Date().toISOString()
+                                }]
+                            }));
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                }
+            };
+
+            const removePhoto = (photoId) => {
+                setNewActivity(prev => ({
+                    ...prev,
+                    photos: prev.photos.filter(p => p.id !== photoId)
+                }));
+            };
+
+            const handleAddExpense = () => {
+                if (!newExpense.amount || parseFloat(newExpense.amount) <= 0) {
+                    alert('Please enter a valid amount');
+                    return;
+                }
+                const expense = {
+                    id: Date.now().toString(),
+                    type: newExpense.type,
+                    amount: parseFloat(newExpense.amount),
+                    unit: newExpense.unit,
+                    quantity: newExpense.quantity ? parseFloat(newExpense.quantity) : null,
+                    notes: newExpense.notes
+                };
+                setNewActivity(prev => ({ ...prev, expenses: [...prev.expenses, expense] }));
+                setNewExpense({ type: 'Fuel', amount: '', unit: 'Litres', quantity: '', notes: '' });
+                setIsAddingExpense(false);
+            };
+
+            const removeExpense = (expenseId) => {
+                setNewActivity(prev => ({
+                    ...prev,
+                    expenses: prev.expenses.filter(e => e.id !== expenseId)
+                }));
+            };
+
+            const handleSaveActivity = () => {
+                if (!newActivity.description.trim()) {
+                    alert('Please add a description');
+                    return;
+                }
+                const activity = {
+                    id: Date.now().toString(),
+                    category: newActivity.category,
+                    description: sanitizeInput(newActivity.description),
+                    date: newActivity.date,
+                    time: newActivity.time,
+                    location: newActivity.location,
+                    gps: newActivity.gps,
+                    photos: newActivity.photos,
+                    expenses: newActivity.expenses,
+                    synced: true
+                };
+                setActivities([activity, ...activities]);
+                updateKPIsFromActivity(activity);
+                setNewActivity({
+                    category: 'Grower Interactions',
+                    description: '',
+                    date: new Date().toISOString().split('T')[0],
+                    time: new Date().toTimeString().slice(0, 5),
+                    location: newActivity.location,
+                    gps: newActivity.gps,
+                    photos: [],
+                    expenses: []
+                });
+                setCurrentScreen('home');
+                alert('Activity saved successfully!');
+            };
+
+            const HomeScreen = () => (
+                <div className="min-h-screen bg-gray-50">
+                    <div className="bg-green-700 text-white p-4 shadow-lg">
+                        <div className="flex justify-between items-center mb-2">
+                            <h1 className="text-xl font-bold">Kutsaga Field Ops</h1>
+                            <div className="flex gap-3">
+                                <span className="text-xl">🌍</span>
+                                <span className="text-xl">☁️</span>
+                                <span className="text-xl">👤</span>
+                            </div>
+                        </div>
+                        <p className="text-sm opacity-90">Welcome back, John Mapfumo</p>
+                        <p className="text-xs opacity-75">Research Officer - Tobacco Division</p>
+                    </div>
+
+                    <div className="bg-white m-4 p-4 rounded-lg shadow">
+                        <h2 className="font-semibold text-gray-800 mb-3">This Week's Summary</h2>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-blue-50 p-3 rounded">
+                                <div className="text-2xl font-bold text-blue-700">{weekSummary.activities}</div>
+                                <div className="text-xs text-gray-600">Activities logged</div>
+                            </div>
+                            <div className="bg-green-50 p-3 rounded">
+                                <div className="text-2xl font-bold text-green-700">{weekSummary.growers}</div>
+                                <div className="text-xs text-gray-600">Growers engaged</div>
+                            </div>
+                            <div className="bg-orange-50 p-3 rounded">
+                                <div className="text-2xl font-bold text-orange-700">${weekSummary.expenses.toFixed(2)}</div>
+                                <div className="text-xs text-gray-600">Expenses</div>
+                            </div>
+                            <div className="bg-purple-50 p-3 rounded">
+                                <div className="text-2xl font-bold text-purple-700">{weekSummary.kpiProgress}%</div>
+                                <div className="text-xs text-gray-600">KPI Progress</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="px-4 mb-4">
+                        <button
+                            onClick={() => setCurrentScreen('new-activity')}
+                            className="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-lg font-semibold flex items-center justify-center gap-2 shadow-lg"
+                        >
+                            <span className="text-2xl">+</span>
+                            LOG NEW ACTIVITY
+                        </button>
+                    </div>
+
+                    <div className="px-4 mb-4">
+                        <h3 className="text-sm font-semibold text-gray-600 mb-2">Quick Actions</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button onClick={() => setCurrentScreen('activities')} className="bg-white p-4 rounded-lg shadow flex flex-col items-center gap-2 hover:bg-gray-50">
+                                <span className="text-2xl">📋</span>
+                                <span className="text-sm font-medium">My Activities</span>
+                            </button>
+                            <button onClick={() => setCurrentScreen('reports')} className="bg-white p-4 rounded-lg shadow flex flex-col items-center gap-2 hover:bg-gray-50">
+                                <span className="text-2xl">📊</span>
+                                <span className="text-sm font-medium">Reports</span>
+                            </button>
+                            <button onClick={() => setCurrentScreen('expenses')} className="bg-white p-4 rounded-lg shadow flex flex-col items-center gap-2 hover:bg-gray-50">
+                                <span className="text-2xl">💰</span>
+                                <span className="text-sm font-medium">Expenses</span>
+                            </button>
+                            <button onClick={() => setCurrentScreen('kpis')} className="bg-white p-4 rounded-lg shadow flex flex-col items-center gap-2 hover:bg-gray-50">
+                                <span className="text-2xl">🎯</span>
+                                <span className="text-sm font-medium">KPIs</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="px-4 mb-4">
+                        <h3 className="text-sm font-semibold text-gray-600 mb-2">Recent Activities</h3>
+                        {activities.slice(0, 3).map(activity => (
+                            <div key={activity.id} className="bg-white p-4 rounded-lg shadow mb-2 hover:bg-gray-50">
+                                <div className="flex justify-between items-start">
+                                    <div style={{flex: 1}}>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span>🌿</span>
+                                            <span className="font-semibold text-sm">{activity.category}</span>
+                                        </div>
+                                        <p className="text-xs text-gray-600 mb-1">{activity.description.slice(0, 60)}...</p>
+                                        <div className="text-xs text-gray-500">
+                                            {activity.date === new Date().toISOString().split('T')[0] ? 'Today' : activity.date}, {activity.time} • {activity.photos.length} photos
+                                        </div>
+                                    </div>
+                                    <span>›</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+
+            const NewActivityScreen = () => (
+                <div className="min-h-screen bg-gray-50">
+                    <div className="bg-green-700 text-white p-4 shadow-lg flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            <span className="cursor-pointer text-xl" onClick={() => setCurrentScreen('home')}>←</span>
+                            <h1 className="text-xl font-bold">Log New Activity</h1>
+                        </div>
+                        <span className="cursor-pointer text-xl" onClick={handleSaveActivity}>✓</span>
+                    </div>
+
+                    <div className="p-4" style={{maxHeight: 'calc(100vh - 80px)', overflowY: 'auto'}}>
+                        <div className="mb-4">
+                            <label className="text-sm font-semibold text-gray-700 mb-2" style={{display: 'block'}}>
+                                Activity Category <span className="text-red-500">*</span>
+                            </label>
+                            <select value={newActivity.category} onChange={handleActivityChange('category')}>
+                                <option>Grower Interactions</option>
+                                <option>Site Visits</option>
+                                <option>Trainings</option>
+                                <option>Trials / Experiments</option>
+                                <option>Demonstrations</option>
+                                <option>Meetings</option>
+                                <option>Administration</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="text-sm font-semibold text-gray-700 mb-2" style={{display: 'block'}}>
+                                Photos ({newActivity.photos.length})
+                            </label>
+                            <div className="flex gap-2 mb-3" style={{overflowX: 'auto', flexWrap: 'wrap'}}>
+                                {newActivity.photos.map((photo) => (
+                                    <div key={photo.id} className="relative">
+                                        <img src={photo.url} alt="Activity" className="photo-preview" />
+                                        <button
+                                            onClick={() => removePhoto(photo.id)}
+                                            className="absolute top-0 right-0 bg-red-600 text-white rounded-full"
+                                            style={{width: '24px', height: '24px', fontSize: '14px', margin: '4px'}}
+                                        >×</button>
+                                    </div>
+                                ))}
+                                <div
+                                    onClick={() => cameraInputRef.current.click()}
+                                    className="bg-white rounded cursor-pointer hover:bg-gray-50 flex items-center justify-center border-2 border-dashed border-gray-300"
+                                    style={{width: '80px', height: '80px', fontSize: '2rem'}}
+                                >+</div>
+                            </div>
+
+                            <input ref={cameraInputRef} type="file" accept="image/*" capture onChange={handlePhotoCapture} className="hidden" />
+                            <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handlePhotoCapture} className="hidden" />
+
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => { if (cameraInputRef.current) { cameraInputRef.current.value = ''; cameraInputRef.current.click(); } }}
+                                    className="bg-blue-600 text-white py-2 px-4 rounded flex items-center justify-center gap-2"
+                                    style={{flex: 1}}
+                                >📸 Camera</button>
+                                <button
+                                    onClick={() => { if (fileInputRef.current) { fileInputRef.current.value = ''; fileInputRef.current.click(); } }}
+                                    className="bg-gray-600 text-white py-2 px-4 rounded flex items-center justify-center gap-2"
+                                    style={{flex: 1}}
+                                >🖼️ Gallery</button>
+                            </div>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="text-sm font-semibold text-gray-700 mb-2" style={{display: 'block'}}>
+                                Description <span className="text-red-500">*</span>
+                            </label>
+                            <textarea
+                                ref={descriptionRef}
+                                defaultValue={newActivity.description}
+                                onBlur={(e) => setNewActivity(prev => ({...prev, description: e.target.value}))}
+                                onChange={(e) => { newActivity.description = e.target.value; }}
+                                placeholder="Describe the activity in detail..."
+                                style={{height: '120px', width: '100%'}}
+                            />
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="text-sm font-semibold text-gray-700 mb-2" style={{display: 'block'}}>Location</label>
+                            <div className="bg-blue-50 p-3 rounded-lg">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span>📍</span>
+                                    <span className="text-sm font-medium">
+                                        {newActivity.gps ? `${newActivity.gps.lat.toFixed(4)}, ${newActivity.gps.lon.toFixed(4)}` : 'Detecting...'}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-600">{newActivity.location}</p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    if (!navigator.geolocation) { alert('Geolocation is not supported by your device'); return; }
+                                    setNewActivity(prev => ({...prev, location: 'Getting location...'}));
+                                    navigator.geolocation.getCurrentPosition(
+                                        (position) => {
+                                            const { latitude, longitude } = position.coords;
+                                            setNewActivity(prev => ({
+                                                ...prev,
+                                                gps: { lat: latitude, lon: longitude },
+                                                location: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+                                            }));
+                                            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`, {
+                                                headers: { 'User-Agent': 'KutsagaFieldOps/1.0' }
+                                            })
+                                                .then(res => res.json())
+                                                .then(data => {
+                                                    if (data.display_name) {
+                                                        const addressParts = data.display_name.split(',');
+                                                        setNewActivity(prev => ({ ...prev, location: addressParts.slice(0, 3).join(',').trim() }));
+                                                    }
+                                                })
+                                                .catch(() => {});
+                                        },
+                                        (error) => {
+                                            let errorMsg = 'Unable to get location';
+                                            if (error.code === error.PERMISSION_DENIED) {
+                                                errorMsg = 'Location permission denied';
+                                                alert('Please enable location access in your phone Settings > Apps > Kutsaga > Permissions');
+                                            }
+                                            setNewActivity(prev => ({ ...prev, location: errorMsg }));
+                                        },
+                                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                                    );
+                                }}
+                                className="w-full bg-blue-100 text-blue-700 py-2 px-4 rounded text-sm font-medium mt-2"
+                            >📍 Refresh Location</button>
+                        </div>
+
+                        <div className="flex gap-2 mb-4">
+                            <div style={{flex: 1}}>
+                                <label className="text-sm font-semibold text-gray-700 mb-2" style={{display: 'block'}}>Date</label>
+                                <input type="date" value={newActivity.date} onChange={handleActivityChange('date')} />
+                            </div>
+                            <div style={{flex: 1}}>
+                                <label className="text-sm font-semibold text-gray-700 mb-2" style={{display: 'block'}}>Time</label>
+                                <input type="time" value={newActivity.time} onChange={handleActivityChange('time')} />
+                            </div>
+                        </div>
+
+                        <div className="mb-4">
+                            <div className="flex justify-between items-center mb-2">
+                                <label className="text-sm font-semibold text-gray-700">Expenses</label>
+                                <button onClick={() => setIsAddingExpense(!isAddingExpense)} className="bg-green-600 text-white px-3 py-1 rounded text-sm">
+                                    {isAddingExpense ? 'Cancel' : '+ Add Expense'}
+                                </button>
+                            </div>
+
+                            {isAddingExpense && (
+                                <div className="bg-gray-50 p-3 rounded-lg mb-3 border-2 border-green-300">
+                                    <div className="mb-2">
+                                        <label className="text-xs font-semibold text-gray-700 mb-1" style={{display: 'block'}}>Expense Type</label>
+                                        <select value={newExpense.type} onChange={handleExpenseChange('type')} className="text-sm">
+                                            <option>Fuel</option>
+                                            <option>Food & Accommodation</option>
+                                            <option>Branded Items</option>
+                                            <option>Inputs/Materials</option>
+                                            <option>Transport</option>
+                                            <option>Other</option>
+                                        </select>
+                                    </div>
+
+                                    {newExpense.type === 'Fuel' && (
+                                        <div className="mb-2">
+                                            <label className="text-xs font-semibold text-gray-700 mb-1" style={{display: 'block'}}>Quantity (Litres)</label>
+                                            <input
+                                                ref={expenseQuantityRef}
+                                                type="number"
+                                                defaultValue={newExpense.quantity}
+                                                onBlur={(e) => setNewExpense(prev => ({...prev, quantity: e.target.value}))}
+                                                onChange={(e) => { newExpense.quantity = e.target.value; }}
+                                                placeholder="0" className="text-sm" step="0.1"
+                                            />
+                                        </div>
+                                    )}
+
+                                    <div className="mb-2">
+                                        <label className="text-xs font-semibold text-gray-700 mb-1" style={{display: 'block'}}>Amount (USD)</label>
+                                        <input
+                                            ref={expenseAmountRef}
+                                            type="number"
+                                            defaultValue={newExpense.amount}
+                                            onBlur={(e) => setNewExpense(prev => ({...prev, amount: e.target.value}))}
+                                            onChange={(e) => { newExpense.amount = e.target.value; }}
+                                            placeholder="0.00" className="text-sm" step="0.01"
+                                        />
+                                    </div>
+
+                                    <div className="mb-2">
+                                        <label className="text-xs font-semibold text-gray-700 mb-1" style={{display: 'block'}}>Notes</label>
+                                        <textarea
+                                            ref={expenseNotesRef}
+                                            defaultValue={newExpense.notes}
+                                            onBlur={(e) => setNewExpense(prev => ({...prev, notes: e.target.value}))}
+                                            onChange={(e) => { newExpense.notes = e.target.value; }}
+                                            placeholder="Additional details..." className="text-sm"
+                                            style={{height: '60px', width: '100%'}}
+                                        />
+                                    </div>
+
+                                    <button onClick={handleAddExpense} className="w-full bg-green-600 text-white py-2 rounded font-medium text-sm">
+                                        ✓ Add Expense
+                                    </button>
+                                </div>
+                            )}
+
+                            {newActivity.expenses.length > 0 && (
+                                <div className="bg-gray-50 p-3 rounded-lg">
+                                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Added Expenses</h3>
+                                    {newActivity.expenses.map((expense) => (
+                                        <div key={expense.id} className="flex justify-between items-start py-2 border-b border-gray-200">
+                                            <div style={{flex: 1}}>
+                                                <div className="font-medium text-sm">{expense.type}</div>
+                                                {expense.quantity && <div className="text-xs text-gray-600">{expense.quantity} {expense.unit}</div>}
+                                                {expense.notes && <div className="text-xs text-gray-500">{expense.notes}</div>}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-semibold text-sm">${expense.amount.toFixed(2)}</span>
+                                                <button onClick={() => removeExpense(expense.id)} className="text-red-600 text-lg">×</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <div className="mt-2 pt-2 border-t-2 border-gray-300 flex justify-between font-bold">
+                                        <span>Total</span>
+                                        <span className="text-green-700">
+                                            ${newActivity.expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0).toFixed(2)}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3 mt-4 pb-4">
+                            <button onClick={() => setCurrentScreen('home')} className="bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-semibold" style={{flex: 1}}>Cancel</button>
+                            <button onClick={handleSaveActivity} className="bg-green-600 text-white py-3 px-4 rounded-lg font-semibold" style={{flex: 1}}>Submit Activity</button>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const ExpensesScreen = () => {
+                const [selectedPeriod, setSelectedPeriod] = useState('week');
+                const [viewMode, setViewMode] = useState('summary');
+
+                const allExpenses = activities.flatMap(activity =>
+                    activity.expenses.map(expense => ({
+                        ...expense,
+                        activityId: activity.id,
+                        activityCategory: activity.category,
+                        activityDate: activity.date,
+                        activityTime: activity.time,
+                        activityDescription: activity.description
+                    }))
+                );
+
+                const filterExpensesByPeriod = (period) => {
+                    const today = new Date();
+                    const todayDate = new Date(today.toISOString().split('T')[0]);
+                    return allExpenses.filter(expense => {
+                        const expenseDate = new Date(expense.activityDate);
+                        switch(period) {
+                            case 'day': return expense.activityDate === todayDate.toISOString().split('T')[0];
+                            case 'week':
+                                const weekStart = new Date(todayDate);
+                                weekStart.setDate(todayDate.getDate() - todayDate.getDay());
+                                return expenseDate >= weekStart && expenseDate <= todayDate;
+                            case 'month':
+                                return expenseDate.getMonth() === todayDate.getMonth() && expenseDate.getFullYear() === todayDate.getFullYear();
+                            case 'year': return expenseDate.getFullYear() === todayDate.getFullYear();
+                            default: return true;
+                        }
+                    });
+                };
+
+                const periodExpenses = filterExpensesByPeriod(selectedPeriod);
+                const totalExpenses = periodExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+                const expensesByCategory = periodExpenses.reduce((acc, expense) => {
+                    if (!acc[expense.type]) acc[expense.type] = { total: 0, count: 0, items: [] };
+                    acc[expense.type].total += expense.amount;
+                    acc[expense.type].count += 1;
+                    acc[expense.type].items.push(expense);
+                    return acc;
+                }, {});
+
+                const getPeriodLabel = () => ({ day: 'Today', week: 'This Week', month: 'This Month', year: 'This Year' }[selectedPeriod] || '');
+
+                return (
+                    <div className="min-h-screen bg-gray-50">
+                        <div className="bg-green-700 text-white p-4 shadow-lg">
+                            <div className="flex items-center gap-3 mb-3">
+                                <span className="cursor-pointer text-xl" onClick={() => setCurrentScreen('home')}>←</span>
+                                <h1 className="text-xl font-bold">Expenses</h1>
+                            </div>
+                            <div className="grid grid-cols-4 gap-2 mb-2">
+                                {['day', 'week', 'month', 'year'].map(period => (
+                                    <button key={period} onClick={() => setSelectedPeriod(period)}
+                                        className={`py-2 px-3 rounded text-sm font-medium ${selectedPeriod === period ? 'bg-white text-green-700' : 'bg-green-600 text-white'}`}>
+                                        {period.charAt(0).toUpperCase() + period.slice(1)}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex gap-2">
+                                <button onClick={() => setViewMode('summary')} className={`flex-1 py-2 rounded text-sm font-medium ${viewMode === 'summary' ? 'bg-white text-green-700' : 'bg-green-600 text-white'}`}>📊 Summary</button>
+                                <button onClick={() => setViewMode('detailed')} className={`flex-1 py-2 rounded text-sm font-medium ${viewMode === 'detailed' ? 'bg-white text-green-700' : 'bg-green-600 text-white'}`}>📋 All Items</button>
+                            </div>
+                        </div>
+
+                        <div className="p-4">
+                            <div className="bg-white p-4 rounded-lg shadow mb-4 text-center">
+                                <div className="text-sm text-gray-600 mb-1">{getPeriodLabel()} Total</div>
+                                <div className="text-3xl font-bold text-green-700 mb-2">${totalExpenses.toFixed(2)}</div>
+                                <div className="text-xs text-gray-500">{periodExpenses.length} expense item{periodExpenses.length !== 1 ? 's' : ''}</div>
+                            </div>
+
+                            {viewMode === 'summary' ? (
+                                <div>
+                                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Breakdown by Category</h3>
+                                    {Object.keys(expensesByCategory).length === 0 ? (
+                                        <div className="bg-white p-8 rounded-lg shadow text-center text-gray-500">
+                                            <span className="text-4xl mb-2" style={{display: 'block'}}>💰</span>
+                                            No expenses recorded for {getPeriodLabel().toLowerCase()}
+                                        </div>
+                                    ) : (
+                                        Object.entries(expensesByCategory).sort((a, b) => b[1].total - a[1].total).map(([category, data]) => {
+                                            const percentage = (data.total / totalExpenses * 100).toFixed(1);
+                                            return (
+                                                <div key={category} className="bg-white p-4 rounded-lg shadow mb-3">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div>
+                                                            <div className="font-semibold text-gray-800">{category}</div>
+                                                            <div className="text-xs text-gray-500">{data.count} item{data.count > 1 ? 's' : ''}</div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="font-bold text-green-700">${data.total.toFixed(2)}</div>
+                                                            <div className="text-xs text-gray-500">{percentage}%</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-gray-200 rounded-full" style={{height: '6px'}}>
+                                                        <div className="bg-green-600 rounded-full" style={{height: '6px', width: `${percentage}%`}}></div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            ) : (
+                                <div>
+                                    <h3 className="text-sm font-semibold text-gray-700 mb-3">All Expense Items</h3>
+                                    {periodExpenses.length === 0 ? (
+                                        <div className="bg-white p-8 rounded-lg shadow text-center text-gray-500">
+                                            <span className="text-4xl mb-2" style={{display: 'block'}}>📋</span>
+                                            No expenses recorded for {getPeriodLabel().toLowerCase()}
+                                        </div>
+                                    ) : (
+                                        periodExpenses.sort((a, b) => new Date(b.activityDate) - new Date(a.activityDate)).map((expense, idx) => (
+                                            <div key={idx} className="bg-white p-4 rounded-lg shadow mb-3">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div className="text-xs text-gray-500">{expense.activityDate} • {expense.activityTime}</div>
+                                                    <div className="font-bold text-green-700">${expense.amount.toFixed(2)}</div>
+                                                </div>
+                                                <div className="font-semibold text-gray-800 mb-1">{expense.type}</div>
+                                                {expense.quantity && <div className="text-sm text-gray-600 mb-1">Quantity: {expense.quantity} {expense.unit}</div>}
+                                                {expense.notes && <div className="text-sm text-gray-600 mb-2">{expense.notes}</div>}
+                                                <div className="pt-2 border-t border-gray-200">
+                                                    <div className="text-xs text-gray-500"><span className="font-medium">Activity:</span> {expense.activityCategory}</div>
+                                                    <div className="text-xs text-gray-400 mt-1">{expense.activityDescription.slice(0, 80)}...</div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            const ActivitiesScreen = () => (
+                <div className="min-h-screen bg-gray-50">
+                    <div className="bg-green-700 text-white p-4 shadow-lg">
+                        <div className="flex items-center gap-3 mb-3">
+                            <span className="cursor-pointer text-xl" onClick={() => setCurrentScreen('home')}>←</span>
+                            <h1 className="text-xl font-bold">My Activities</h1>
+                        </div>
+                        <div className="flex gap-2">
+                            <select className="p-2 rounded text-sm" style={{flex: 1, color: '#374151'}}>
+                                <option>This Week</option><option>This Month</option><option>Last Month</option>
+                            </select>
+                            <select className="p-2 rounded text-sm" style={{flex: 1, color: '#374151'}}>
+                                <option>All Types</option><option>Grower Interactions</option><option>Site Visits</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="p-4">
+                        {activities.map(activity => (
+                            <div key={activity.id} className="bg-white p-4 rounded-lg shadow mb-3">
+                                <div className="flex items-start justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <span>🌿</span>
+                                        <span className="font-semibold text-sm">{activity.category}</span>
+                                    </div>
+                                    {activity.synced && <div className="text-green-600 text-xs flex items-center gap-1"><span>✓</span> Synced</div>}
+                                </div>
+                                <p className="text-sm text-gray-700 mb-2">{activity.description}</p>
+                                <div className="text-xs text-gray-500 mb-2">
+                                    {activity.date}, {activity.time} • {activity.photos.length} photos
+                                    {activity.expenses.length > 0 && ` • $${activity.expenses.reduce((s, e) => s + e.amount, 0).toFixed(2)} expenses`}
+                                </div>
+                                <div className="text-xs text-gray-500 flex items-center gap-1">
+                                    <span>📍</span><span>{activity.location}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+
+            const KPIScreen = () => {
+                const currentQuarter = getCurrentQuarter();
+                const quarterKPIs = kpis.map(kpi => ({ ...kpi, currentData: kpi.quarters[currentQuarter] }));
+                const totalWS = quarterKPIs.reduce((sum, kpi) => sum + kpi.currentData.weightedScore, 0);
+                const maxWS = quarterKPIs.reduce((sum, kpi) => sum + (kpi.weight / 100) * 6, 0);
+                const overallPercentage = maxWS > 0 ? (totalWS / maxWS) * 100 : 0;
+
+                return (
+                    <div className="min-h-screen bg-gray-50">
+                        <div className="bg-green-700 text-white p-4 shadow-lg">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                    <span className="cursor-pointer text-xl" onClick={() => setCurrentScreen('home')}>←</span>
+                                    <h1 className="text-xl font-bold">🎯 KPI Progress</h1>
+                                </div>
+                                <button onClick={() => setShowKPISetup(true)} className="bg-white text-green-700 px-3 py-1 rounded text-sm font-semibold">⚙️ Setup</button>
+                            </div>
+                            <span className="text-sm opacity-90">{currentQuarter} 2026 • Auto-updated</span>
+                        </div>
+
+                        <div className="p-4">
+                            <div className="bg-white p-4 rounded-lg shadow mb-4">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h2 className="font-semibold">Overall Score</h2>
+                                    <div className="text-right">
+                                        <div className="text-2xl font-bold text-green-700">{totalWS.toFixed(1)}</div>
+                                        <div className="text-xs text-gray-500">of {maxWS.toFixed(1)}</div>
+                                    </div>
+                                </div>
+                                <div className="bg-gray-200 rounded-full" style={{height: '12px', width: '100%'}}>
+                                    <div className="bg-green-600 rounded-full" style={{height: '12px', width: `${overallPercentage}%`}}></div>
+                                </div>
+                                <div className="text-xs text-gray-600 mt-1">{overallPercentage.toFixed(0)}% of maximum</div>
+                            </div>
+
+                            {quarterKPIs.map((kpi) => {
+                                const qData = kpi.currentData;
+                                const progress = qData.target > 0 ? (qData.actualPerformance / qData.target) * 100 : 0;
+                                const statusColor = qData.rawScore >= 5 ? 'text-green-600' : qData.rawScore === 4 ? 'text-blue-600' : qData.rawScore === 3 ? 'text-yellow-600' : 'text-red-600';
+                                const statusText = qData.rawScore >= 5 ? '🟢 Exceeds' : qData.rawScore === 4 ? '✅ Met' : qData.rawScore === 3 ? '⚠️ Below (OK)' : qData.rawScore > 0 ? '❌ Below' : '⏳ Not Started';
+                                const barColor = progress >= 100 ? 'bg-green-600' : progress >= 75 ? 'bg-blue-600' : progress >= 50 ? 'bg-yellow-600' : 'bg-red-600';
+
+                                return (
+                                    <div key={kpi.id} className="bg-white p-4 rounded-lg shadow mb-3">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div style={{flex: 1}}>
+                                                <h3 className="font-semibold text-gray-800">{kpi.indicator}</h3>
+                                                <div className="text-xs text-gray-500 mt-1">{kpi.performanceArea}</div>
+                                            </div>
+                                            <div className={`text-xs font-semibold ${statusColor} ml-2`}>{statusText}</div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 mb-2 text-sm">
+                                            <div className="flex justify-between"><span className="text-gray-600">Target:</span><span className="font-semibold">{qData.target}</span></div>
+                                            <div className="flex justify-between"><span className="text-gray-600">Actual:</span><span className="font-semibold">{qData.actualPerformance}</span></div>
+                                            <div className="flex justify-between"><span className="text-gray-600">Score:</span><span className="font-semibold">{qData.rawScore}/6</span></div>
+                                            <div className="flex justify-between"><span className="text-gray-600">Weighted:</span><span className="font-semibold">{qData.weightedScore.toFixed(2)}</span></div>
+                                        </div>
+                                        <div className="bg-gray-200 rounded-full" style={{height: '10px', width: '100%'}}>
+                                            <div className={`${barColor} rounded-full`} style={{height: '10px', width: `${Math.min(progress, 100)}%`}}></div>
+                                        </div>
+                                        <div className="text-xs text-gray-600 mt-1">{progress.toFixed(0)}% complete</div>
+                                    </div>
+                                );
+                            })}
+
+                            <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4 mt-4">
+                                <h3 className="font-semibold text-green-900 mb-2">💡 How It Works</h3>
+                                <ul className="text-sm text-green-800 space-y-1" style={{paddingLeft: '20px'}}>
+                                    <li>Log activities normally</li>
+                                    <li>System links to relevant KPIs</li>
+                                    <li>Actual Performance updates automatically</li>
+                                    <li>Scores calculated in real-time</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {showKPISetup && (
+                            <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,padding:'20px'}}>
+                                <div style={{background:'white',borderRadius:'12px',maxWidth:'700px',width:'100%',maxHeight:'90vh',overflow:'auto',padding:'20px'}}>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h2 className="text-xl font-bold">⚙️ Set Up Annual KPI</h2>
+                                        <button onClick={() => setShowKPISetup(false)} className="text-2xl text-gray-500" style={{width:'32px',height:'32px'}}>×</button>
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="block text-sm font-semibold mb-1 text-gray-700">Performance Area</label>
+                                        <select className="w-full p-2 border border-gray-300 rounded" style={{fontSize:'14px'}} id="kpi-area"
+                                            onChange={(e) => {
+                                                document.getElementById('kpi-area-custom').style.display = e.target.value === 'CUSTOM' ? 'block' : 'none';
+                                            }}>
+                                            <option value="">Select Performance Area...</option>
+                                            <option value="IMPROVED GROWER CAPACITY">IMPROVED GROWER CAPACITY</option>
+                                            <option value="CRITICAL SUCCESS FACTORS">CRITICAL SUCCESS FACTORS</option>
+                                            <option value="CUSTOM">+ Add Custom Area</option>
+                                        </select>
+                                        <input type="text" id="kpi-area-custom" placeholder="Enter custom performance area..." className="w-full p-2 border border-gray-300 rounded mt-2" style={{fontSize:'14px',display:'none'}} />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="block text-sm font-semibold mb-1 text-gray-700">Key Performance Indicator</label>
+                                        <select className="w-full p-2 border border-gray-300 rounded" style={{fontSize:'14px'}} id="kpi-indicator"
+                                            onChange={(e) => {
+                                                document.getElementById('kpi-indicator-custom').style.display = e.target.value === 'CUSTOM' ? 'block' : 'none';
+                                            }}>
+                                            <option value="">Select KPI...</option>
+                                            <optgroup label="IMPROVED GROWER CAPACITY">
+                                                <option value="Peer-reviewed publications">Peer-reviewed publications</option>
+                                                <option value="Research trials">Research trials</option>
+                                                <option value="Presentations/Seminars/Webinars/Grower Engagements">Presentations/Seminars/Webinars/Grower Engagements</option>
+                                                <option value="Innovative technologies developed/evaluated">Innovative technologies developed/evaluated</option>
+                                                <option value="Collaboration with stakeholders">Collaboration with stakeholders</option>
+                                            </optgroup>
+                                            <optgroup label="CRITICAL SUCCESS FACTORS">
+                                                <option value="Strategic Leadership">Strategic Leadership</option>
+                                                <option value="Research Quality">Research Quality</option>
+                                                <option value="Industry Partnerships & collaboration">Industry Partnerships & collaboration</option>
+                                                <option value="Communication and Stakeholder Engagement">Communication and Stakeholder Engagement</option>
+                                                <option value="Research Innovations">Research Innovations</option>
+                                                <option value="Human Capital Development">Human Capital Development</option>
+                                                <option value="Compliance and Safety">Compliance and Safety</option>
+                                                <option value="Dependability and Teamwork">Dependability and Teamwork</option>
+                                            </optgroup>
+                                            <option value="CUSTOM">+ Add Custom KPI</option>
+                                        </select>
+                                        <input type="text" id="kpi-indicator-custom" placeholder="Enter custom KPI..." className="w-full p-2 border border-gray-300 rounded mt-2" style={{fontSize:'14px',display:'none'}} />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3 mb-3">
+                                        <div>
+                                            <label className="block text-sm font-semibold mb-1 text-gray-700">Unit</label>
+                                            <select className="w-full p-2 border border-gray-300 rounded" style={{fontSize:'14px'}} id="kpi-unit">
+                                                <option>Number</option><option>%</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold mb-1 text-gray-700">Weight (%)</label>
+                                            <input type="number" className="w-full p-2 border border-gray-300 rounded" style={{fontSize:'14px'}} id="kpi-weight" defaultValue="10" min="1" max="100" />
+                                        </div>
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="block text-sm font-semibold mb-2 text-gray-700">Quarterly Targets</label>
+                                        <div className="grid grid-cols-3 gap-2 mb-1 text-xs font-semibold text-gray-600">
+                                            <div>Quarter</div><div>Target</div><div>Variance</div>
+                                        </div>
+                                        {['Q1','Q2','Q3','Q4'].map(q => (
+                                            <div key={q} className="grid grid-cols-3 gap-2 mb-2">
+                                                <div className="font-semibold text-sm flex items-center">{q}</div>
+                                                <input type="number" placeholder="0" className="p-2 border rounded text-sm" id={`kpi-${q}-target`} defaultValue="0" />
+                                                <input type="number" placeholder="1" className="p-2 border rounded text-sm" id={`kpi-${q}-variance`} defaultValue="1" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="block text-sm font-semibold mb-2 text-gray-700">Link to Activities</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {['Grower Interactions','Site Visits','Trainings','Trials / Experiments','Research','Equipment','Meetings','Other'].map(cat => (
+                                                <label key={cat} className="flex items-center bg-gray-50 p-2 rounded border">
+                                                    <input type="checkbox" className="mr-2" data-category={cat} />
+                                                    <span className="text-sm">{cat}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            let area = document.getElementById('kpi-area').value;
+                                            let indicator = document.getElementById('kpi-indicator').value;
+                                            if (area === 'CUSTOM') area = document.getElementById('kpi-area-custom').value;
+                                            if (indicator === 'CUSTOM') indicator = document.getElementById('kpi-indicator-custom').value;
+                                            if (!area || !indicator) { alert('Please select Performance Area and KPI'); return; }
+                                            const newKPI = {
+                                                id: `kpi_${Date.now()}`,
+                                                performanceArea: area,
+                                                indicator: indicator,
+                                                measureUnit: document.getElementById('kpi-unit').value,
+                                                weight: parseInt(document.getElementById('kpi-weight').value) || 10,
+                                                quarters: {
+                                                    Q1: { target: parseInt(document.getElementById('kpi-Q1-target').value)||0, allowableVariance: parseInt(document.getElementById('kpi-Q1-variance').value)||1, actualPerformance:0, rawScore:0, weightedScore:0 },
+                                                    Q2: { target: parseInt(document.getElementById('kpi-Q2-target').value)||0, allowableVariance: parseInt(document.getElementById('kpi-Q2-variance').value)||1, actualPerformance:0, rawScore:0, weightedScore:0 },
+                                                    Q3: { target: parseInt(document.getElementById('kpi-Q3-target').value)||0, allowableVariance: parseInt(document.getElementById('kpi-Q3-variance').value)||1, actualPerformance:0, rawScore:0, weightedScore:0 },
+                                                    Q4: { target: parseInt(document.getElementById('kpi-Q4-target').value)||0, allowableVariance: parseInt(document.getElementById('kpi-Q4-variance').value)||1, actualPerformance:0, rawScore:0, weightedScore:0 }
+                                                },
+                                                trackingConfig: {
+                                                    categories: Array.from(document.querySelectorAll('input[data-category]:checked')).map(cb => cb.getAttribute('data-category')),
+                                                    keywords: []
+                                                }
+                                            };
+                                            setKPIs([...kpis, newKPI]);
+                                            setShowKPISetup(false);
+                                            alert(`✓ KPI "${indicator}" added!`);
+                                        }}
+                                        className="w-full bg-green-600 text-white py-3 rounded font-semibold"
+                                    >💾 Save KPI</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            const ReportsScreen = () => {
+                const [generating, setGenerating] = useState(false);
+                const [selectedReport, setSelectedReport] = useState(null);
+
+                const generateReport = async (reportType) => {
+                    setGenerating(true);
+                    setSelectedReport(reportType);
+                    try {
+                        const now = new Date();
+                        const periodLabel = reportType === 'weekly' ? `Week of ${now.toLocaleDateString()}` :
+                                          reportType === 'monthly' ? `${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()}` :
+                                          reportType === 'quarterly' ? `Q${Math.floor(now.getMonth() / 3) + 1} ${now.getFullYear()}` :
+                                          `${now.getFullYear()}`;
+
+                        const totalExpenses = activities.reduce((sum, act) => sum + act.expenses.reduce((s, e) => s + e.amount, 0), 0);
+                        const { jsPDF } = window.jspdf;
+                        const doc = new jsPDF();
+                        const pageWidth = doc.internal.pageSize.getWidth();
+                        const margin = 20;
+                        let yPos = 20;
+
+                        doc.setFontSize(20); doc.setFont('helvetica', 'bold');
+                        doc.setTextColor(21, 128, 61);
+                        doc.text('KUTSAGA FIELD OPERATIONS', pageWidth / 2, yPos, { align: 'center' }); yPos += 10;
+                        doc.setFontSize(14);
+                        doc.text(reportType.toUpperCase() + ' REPORT', pageWidth / 2, yPos, { align: 'center' }); yPos += 8;
+                        doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(0,0,0);
+                        doc.text(`Period: ${periodLabel}`, pageWidth / 2, yPos, { align: 'center' }); yPos += 5;
+                        doc.text(`Generated: ${now.toLocaleDateString()}`, pageWidth / 2, yPos, { align: 'center' }); yPos += 15;
+
+                        doc.setDrawColor(21, 128, 61); doc.setLineWidth(1);
+                        doc.line(margin, yPos, pageWidth - margin, yPos); yPos += 10;
+
+                        doc.setFontSize(12); doc.setFont('helvetica', 'bold');
+                        doc.text('EXECUTIVE SUMMARY', margin, yPos); yPos += 8;
+                        doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+                        doc.text(`Total Activities: ${activities.length}`, margin, yPos); yPos += 6;
+                        doc.text(`Grower Interactions: ${activities.filter(a => a.category === 'Grower Interactions').length}`, margin, yPos); yPos += 6;
+                        doc.text(`Total Expenses: USD ${totalExpenses.toFixed(2)}`, margin, yPos); yPos += 15;
+
+                        doc.setFontSize(12); doc.setFont('helvetica', 'bold');
+                        doc.text('ACTIVITY LOG', margin, yPos); yPos += 8;
+                        activities.forEach((activity, idx) => {
+                            if (yPos > 250) { doc.addPage(); yPos = 20; }
+                            doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+                            doc.text(`${idx + 1}. ${activity.category} - ${activity.date}`, margin, yPos); yPos += 6;
+                            doc.setFont('helvetica', 'normal');
+                            const lines = doc.splitTextToSize(activity.description, pageWidth - (2 * margin));
+                            lines.forEach(line => { doc.text(line, margin + 5, yPos); yPos += 5; });
+                            doc.text(`Location: ${activity.location}`, margin + 5, yPos); yPos += 10;
+                        });
+
+                        const filename = `Kutsaga_${reportType}_${now.toISOString().split('T')[0]}.pdf`;
+                        doc.save(filename);
+                        alert(`${reportType} report downloaded!`);
+                    } catch (error) {
+                        alert('Error generating report: ' + error.message);
+                    } finally {
+                        setGenerating(false);
+                        setSelectedReport(null);
+                    }
+                };
+
+                const reportTypes = [
+                    { key: 'weekly', label: 'Weekly Report', sub: 'This week\'s activities', color: '#2563eb' },
+                    { key: 'monthly', label: 'Monthly Report', sub: `${new Date().toLocaleString('default', {month:'long'})} ${new Date().getFullYear()}`, color: '#16a34a' },
+                    { key: 'quarterly', label: 'Quarterly Report', sub: `Q${Math.floor(new Date().getMonth()/3)+1} ${new Date().getFullYear()}`, color: '#7c3aed' },
+                    { key: 'yearly', label: 'Annual Report', sub: `${new Date().getFullYear()}`, color: '#ea580c' }
+                ];
+
+                return (
+                    <div className="min-h-screen bg-gray-50">
+                        <div className="bg-green-700 text-white p-4 shadow-lg">
+                            <div className="flex items-center gap-3">
+                                <span className="cursor-pointer text-xl" onClick={() => setCurrentScreen('home')}>←</span>
+                                <h1 className="text-xl font-bold">Reports</h1>
+                            </div>
+                            <p className="text-sm opacity-90 mt-1">Generate professional PDF reports</p>
+                        </div>
+
+                        {generating && (
+                            <div className="m-4 bg-white p-6 rounded-lg shadow text-center">
+                                <div style={{border:'3px solid #f3f3f3',borderTop:'3px solid #16a34a',borderRadius:'50%',width:'40px',height:'40px',animation:'spin 1s linear infinite',margin:'20px auto'}}></div>
+                                <p className="text-gray-700 font-medium">Generating {selectedReport} report...</p>
+                            </div>
+                        )}
+
+                        <div className="p-4">
+                            {reportTypes.map(rt => (
+                                <div key={rt.key} className="bg-white p-4 rounded-lg shadow mb-3">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div>
+                                            <h3 className="font-semibold text-gray-800">📊 {rt.label}</h3>
+                                            <p className="text-xs text-gray-500">{rt.sub}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => generateReport(rt.key)}
+                                        disabled={generating}
+                                        className="w-full text-white py-2 rounded font-medium"
+                                        style={{background: generating ? '#9ca3af' : rt.color, cursor: generating ? 'not-allowed' : 'pointer'}}
+                                    >
+                                        📄 Generate PDF Report
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="max-w-md mx-auto bg-white shadow-lg" style={{minHeight: '100vh'}}>
+                    {currentScreen === 'home' && <HomeScreen />}
+                    {currentScreen === 'new-activity' && <NewActivityScreen />}
+                    {currentScreen === 'activities' && <ActivitiesScreen />}
+                    {currentScreen === 'expenses' && <ExpensesScreen />}
+                    {currentScreen === 'kpis' && <KPIScreen />}
+                    {currentScreen === 'reports' && <ReportsScreen />}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "appId": "com.kutsaga.fieldops",
+  "appName": "Kutsaga Field Ops",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}

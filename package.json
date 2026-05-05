@@ -1,0 +1,15 @@
+{
+  "name": "kutsaga-field-ops",
+  "version": "1.0.0",
+  "description": "Kutsaga Field Operations App for Zimbabwe Agricultural Extension Officers",
+  "scripts": {
+    "sync": "cap sync"
+  },
+  "dependencies": {
+    "@capacitor/android": "5.7.2",
+    "@capacitor/core": "5.7.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "5.7.2"
+  }
+}

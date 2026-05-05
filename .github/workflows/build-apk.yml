@@ -30,14 +30,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Bundle JS dependencies locally (offline support)
-        run: |
-          mkdir -p www/js
-          curl -L "https://unpkg.com/react@18/umd/react.production.min.js" -o www/js/react.production.min.js
-          curl -L "https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" -o www/js/react-dom.production.min.js
-          curl -L "https://unpkg.com/@babel/standalone/babel.min.js" -o www/js/babel.min.js
-          curl -L "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" -o www/js/jspdf.umd.min.js
-          echo "Bundled $(du -sh www/js | cut -f1) of JS dependencies"
+      - name: Build web app with Vite
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
 
       - name: Add Android platform
         run: npx cap add android

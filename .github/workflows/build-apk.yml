@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,13 +22,22 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Node.js 18
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install dependencies
         run: npm install
+
+      - name: Bundle JS dependencies locally (offline support)
+        run: |
+          mkdir -p www/js
+          curl -L "https://unpkg.com/react@18/umd/react.production.min.js" -o www/js/react.production.min.js
+          curl -L "https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" -o www/js/react-dom.production.min.js
+          curl -L "https://unpkg.com/@babel/standalone/babel.min.js" -o www/js/babel.min.js
+          curl -L "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" -o www/js/jspdf.umd.min.js
+          echo "Bundled $(du -sh www/js | cut -f1) of JS dependencies"
 
       - name: Add Android platform
         run: npx cap add android

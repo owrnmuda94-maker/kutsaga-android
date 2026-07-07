@@ -67,9 +67,11 @@ export default function RODashboard() {
       </div>
 
       <div className="card">
-        <div style={styles.actionRow}>
-          <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => navigate('/kpis')}>🎯 KPIs</button>
-          <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => navigate('/activities')}>📋 Activities</button>
+        <div className="grid-2">
+          <button className="btn btn-primary" onClick={() => navigate('/kpis')}>🎯 KPIs</button>
+          <button className="btn btn-secondary" onClick={() => navigate('/activities')}>📋 Activities</button>
+          <button className="btn btn-secondary" onClick={() => navigate('/expenses')}>💰 Expenses</button>
+          <button className="btn btn-secondary" onClick={() => navigate('/reports')}>📄 Reports</button>
         </div>
       </div>
     </div>

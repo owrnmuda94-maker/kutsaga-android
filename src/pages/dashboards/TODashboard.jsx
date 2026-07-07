@@ -76,13 +76,11 @@ export default function TODashboard() {
       {/* Quick actions */}
       <div className="card" style={styles.actions}>
         <h3 style={styles.sectionTitle}>Quick Actions</h3>
-        <div style={styles.actionRow}>
-          <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => navigate('/kpis')}>
-            🎯 Manage KPIs
-          </button>
-          <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => navigate('/activities')}>
-            📋 Log Activity
-          </button>
+        <div className="grid-2 mt-12">
+          <button className="btn btn-primary" onClick={() => navigate('/kpis')}>🎯 Manage KPIs</button>
+          <button className="btn btn-secondary" onClick={() => navigate('/activities')}>📋 Log Activity</button>
+          <button className="btn btn-secondary" onClick={() => navigate('/expenses')}>💰 Expenses</button>
+          <button className="btn btn-secondary" onClick={() => navigate('/reports')}>📄 Reports</button>
         </div>
       </div>
     </div>

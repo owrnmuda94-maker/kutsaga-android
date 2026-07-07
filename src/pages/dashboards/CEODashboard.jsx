@@ -145,6 +145,7 @@ export default function CEODashboard() {
       <div className="card">
         <div style={styles.actionRow}>
           <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => navigate('/kpis')}>🎯 All KPIs</button>
+          <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => navigate('/reports')}>📄 Reports</button>
           <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => navigate('/notifications')}>🔔 Alerts</button>
         </div>
       </div>

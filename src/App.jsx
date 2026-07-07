@@ -7,6 +7,8 @@ import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import KPIManagement from './pages/KPIManagement';
 import Activities from './pages/Activities';
+import Expenses from './pages/Expenses';
+import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -35,6 +37,8 @@ function AppRoutes() {
         <Route path="dashboard"     element={<Dashboard />} />
         <Route path="kpis"          element={<KPIManagement />} />
         <Route path="activities"    element={<Activities />} />
+        <Route path="expenses"      element={<Expenses />} />
+        <Route path="reports"       element={<Reports />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="profile"       element={<Profile />} />
       </Route>

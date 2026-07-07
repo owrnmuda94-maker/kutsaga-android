@@ -1,6 +1,5 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { useNotifications } from '../../hooks/useNotifications';
 
 const NAV = [
   { to: '/dashboard',     icon: '🏠', label: 'Home' },
@@ -10,8 +9,7 @@ const NAV = [
   { to: '/profile',       icon: '👤', label: 'Profile' },
 ];
 
-export default function BottomNav() {
-  const { unreadCount } = useNotifications();
+export default function BottomNav({ unreadCount = 0 }) {
 
   return (
     <nav style={styles.nav}>

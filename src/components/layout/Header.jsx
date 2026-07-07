@@ -1,10 +1,8 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNotifications } from '../../hooks/useNotifications';
 
-export default function Header() {
+export default function Header({ unreadCount = 0 }) {
   const { profile } = useAuth();
-  const { unreadCount } = useNotifications();
 
   return (
     <header style={styles.header}>

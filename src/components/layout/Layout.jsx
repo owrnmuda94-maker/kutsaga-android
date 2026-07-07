@@ -2,15 +2,18 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import BottomNav from './BottomNav';
+import { useNotifications } from '../../hooks/useNotifications';
 
 export default function Layout() {
+  const { unreadCount } = useNotifications();
+
   return (
     <div style={styles.root}>
-      <Header />
+      <Header unreadCount={unreadCount} />
       <main style={styles.main}>
         <Outlet />
       </main>
-      <BottomNav />
+      <BottomNav unreadCount={unreadCount} />
     </div>
   );
 }

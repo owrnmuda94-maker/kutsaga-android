@@ -17,10 +17,11 @@ export default function Signup() {
   const fullNameRef = useRef();
   const emailRef    = useRef();
   const passwordRef = useRef();
-  const [role,     setRole]     = useState(ROLES.TO);
-  const [division, setDivision] = useState(DIVISIONS[0]);
-  const [error,    setError]    = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [role,          setRole]          = useState(ROLES.TO);
+  const [division,      setDivision]      = useState(DIVISIONS[0]);
+  const [error,         setError]         = useState('');
+  const [loading,       setLoading]       = useState(false);
+  const [emailSent,     setEmailSent]     = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -30,18 +31,42 @@ export default function Signup() {
 
     setLoading(true);
     try {
-      await signUp({
+      const result = await signUp({
         email:    emailRef.current.value.trim(),
         password: pw,
         fullName: fullNameRef.current.value.trim(),
         division: role === ROLES.CEO ? null : division,
         role,
       });
+      if (result?.emailConfirmationRequired) {
+        setEmailSent(true);
+      }
     } catch (err) {
       setError(err.message || 'Registration failed.');
     } finally {
       setLoading(false);
     }
+  }
+
+  if (emailSent) {
+    return (
+      <div style={styles.wrapper}>
+        <div style={styles.header}>
+          <div style={styles.logo}>🌿</div>
+          <h1 style={styles.appName}>Kutsaga Field Ops</h1>
+        </div>
+        <div className="card" style={styles.form}>
+          <h2 style={styles.formTitle}>Check Your Email</h2>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+            A confirmation link has been sent to <strong>{emailRef.current?.value}</strong>.
+            Click it to activate your account, then come back to sign in.
+          </p>
+          <Link to="/login" style={{ ...styles.link, display: 'block', marginTop: '16px', textAlign: 'center' }}>
+            Back to Sign In
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (

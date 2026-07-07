@@ -9,19 +9,23 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
       setSession(session);
       if (session) fetchProfile(session.user.id);
       else setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted || event === 'INITIAL_SESSION') return;
       setSession(session);
       if (session) fetchProfile(session.user.id);
       else { setProfile(null); setLoading(false); }
     });
 
-    return () => subscription.unsubscribe();
+    return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
 
   async function fetchProfile(userId) {
@@ -31,7 +35,10 @@ export function AuthProvider({ children }) {
       .eq('id', userId)
       .single();
 
-    if (!error) setProfile(data);
+    if (error && error.code !== 'PGRST116') {
+      console.error('Profile fetch error:', error.message);
+    }
+    setProfile(data ?? null);
     setLoading(false);
   }
 
@@ -57,6 +64,13 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
 
+    // If email confirmation is enabled, data.session is null — the profile
+    // insert (protected by RLS) must wait until the user confirms and signs in.
+    // For this internal tool with email confirmation disabled, session is present immediately.
+    if (!data.session) {
+      return { ...data, emailConfirmationRequired: true };
+    }
+
     const { error: profileError } = await supabase.from('profiles').insert({
       id: data.user.id,
       email,
@@ -64,7 +78,10 @@ export function AuthProvider({ children }) {
       division: role === 'CEO' ? null : division,
       role,
     });
-    if (profileError) throw profileError;
+    if (profileError) {
+      await supabase.auth.signOut();
+      throw profileError;
+    }
 
     return data;
   }

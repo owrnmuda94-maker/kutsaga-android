@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import KPICard from '../../components/kpi/KPICard';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 
 export default function HODDashboard() {
@@ -88,7 +88,7 @@ export default function HODDashboard() {
               <Tooltip />
               <Bar dataKey="value" radius={[4,4,0,0]}>
                 {chartData.map((entry, i) => (
-                  <React.Fragment key={i} />
+                  <Cell key={i} fill={entry.fill} />
                 ))}
               </Bar>
             </BarChart>

@@ -16,11 +16,12 @@ export default function Layout() {
 }
 
 const styles = {
-  root: { display: 'flex', flexDirection: 'column', minHeight: '100vh' },
+  root: { display: 'flex', flexDirection: 'column', height: '100vh' },
   main: {
     flex: 1,
     marginTop: 'var(--header-h)',
     overflowY: 'auto',
     WebkitOverflowScrolling: 'touch',
+    minHeight: 0,
   },
 };

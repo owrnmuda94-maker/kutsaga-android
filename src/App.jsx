@@ -9,6 +9,7 @@ import KPIManagement from './pages/KPIManagement';
 import Activities from './pages/Activities';
 import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function ProtectedRoute({ children }) {
   const { session, loading } = useAuth();
@@ -46,7 +47,9 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <AppRoutes />
+        <ErrorBoundary>
+          <AppRoutes />
+        </ErrorBoundary>
       </BrowserRouter>
     </AuthProvider>
   );

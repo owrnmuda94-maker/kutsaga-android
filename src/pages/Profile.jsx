@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { ROLE_LEVELS } from '../utils/permissions';
+import { ROLES, ROLE_LEVELS, getRoleLevel } from '../utils/permissions';
 
 export default function Profile() {
   const { profile, signOut, refreshProfile } = useAuth();
@@ -11,6 +11,33 @@ export default function Profile() {
   const [success,  setSuccess]  = useState('');
   const fullNameRef = useRef();
 
+  const [managerProfile, setManagerProfile] = useState(null);
+  const [eligibleManagers, setEligibleManagers] = useState([]);
+  const [selectedManagerId, setSelectedManagerId] = useState('');
+
+  const needsManager = profile && profile.role !== ROLES.CEO;
+
+  useEffect(() => {
+    if (!profile?.manager_id) { setManagerProfile(null); return; }
+    supabase.from('profiles').select('full_name, role').eq('id', profile.manager_id).single()
+      .then(({ data }) => setManagerProfile(data ?? null));
+  }, [profile?.manager_id]);
+
+  useEffect(() => {
+    if (!editing || !profile || !needsManager) return;
+    supabase
+      .from('profiles')
+      .select('id, full_name, role, division')
+      .eq('is_active', true)
+      .or(`division.eq.${profile.division},role.eq.Executive Director,role.eq.CEO`)
+      .then(({ data }) => {
+        const myLevel = getRoleLevel(profile.role);
+        const eligible = (data ?? []).filter(p => p.id !== profile.id && getRoleLevel(p.role) > myLevel);
+        setEligibleManagers(eligible);
+      });
+    setSelectedManagerId(profile.manager_id ?? '');
+  }, [editing, profile, needsManager]);
+
   async function handleSave(e) {
     e.preventDefault();
     setError('');
@@ -19,7 +46,10 @@ export default function Profile() {
     try {
       const { error: err } = await supabase
         .from('profiles')
-        .update({ full_name: fullNameRef.current.value.trim() })
+        .update({
+          full_name: fullNameRef.current.value.trim(),
+          ...(needsManager ? { manager_id: selectedManagerId || null } : {}),
+        })
         .eq('id', profile.id);
       if (err) throw err;
       await refreshProfile();
@@ -54,6 +84,12 @@ export default function Profile() {
         )}
       </div>
 
+      {needsManager && !managerProfile && (
+        <div className="alert" style={{ background: '#fff3cd', color: '#856404', border: '1px solid #ffe69c' }}>
+          ⚠️ No manager set — your KPIs won't be visible to anyone for approval until you set one below.
+        </div>
+      )}
+
       {/* Edit form */}
       <div className="card" style={{ marginBottom: '16px' }}>
         <div className="flex-between" style={{ marginBottom: '12px' }}>
@@ -72,6 +108,24 @@ export default function Profile() {
               <label>Full Name</label>
               <input type="text" className="input" ref={fullNameRef} defaultValue={profile.full_name} required />
             </div>
+
+            {needsManager && (
+              <div className="field">
+                <label>Manager</label>
+                <select className="input" value={selectedManagerId} onChange={e => setSelectedManagerId(e.target.value)}>
+                  <option value="">Not set</option>
+                  {eligibleManagers.map(m => (
+                    <option key={m.id} value={m.id}>{m.full_name} — {m.role}</option>
+                  ))}
+                </select>
+                {eligibleManagers.length === 0 && (
+                  <p className="text-xs text-muted mt-8">
+                    No eligible manager found yet in {profile.division}. Ask your HOD/Team Leader to create their account first.
+                  </p>
+                )}
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: '10px' }}>
               <button type="button" className="btn btn-secondary" onClick={() => setEditing(false)} disabled={saving}>Cancel</button>
               <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={saving}>
@@ -86,6 +140,7 @@ export default function Profile() {
               { label: 'Email',     value: profile.email },
               { label: 'Role',      value: profile.role },
               { label: 'Division',  value: profile.division ?? 'Organisation-wide' },
+              ...(needsManager ? [{ label: 'Manager', value: managerProfile ? `${managerProfile.full_name} (${managerProfile.role})` : 'Not set' }] : []),
             ].map(row => (
               <div key={row.label} style={styles.row}>
                 <p className="text-xs text-muted">{row.label}</p>

@@ -1,10 +1,17 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../hooks/useNotifications';
 
 const TYPE_ICONS = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌' };
 
 export default function Notifications() {
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
+  const navigate = useNavigate();
+
+  function handleClick(n) {
+    if (!n.is_read) markRead(n.id);
+    if (n.link_url) navigate(n.link_url);
+  }
 
   return (
     <div className="page">
@@ -28,8 +35,8 @@ export default function Notifications() {
             <div
               key={n.id}
               className="card"
-              style={{ ...styles.item, ...(n.is_read ? styles.read : styles.unread) }}
-              onClick={() => !n.is_read && markRead(n.id)}
+              style={{ ...styles.item, ...(n.is_read ? styles.read : styles.unread), ...(n.link_url ? { cursor: 'pointer' } : {}) }}
+              onClick={() => handleClick(n)}
             >
               <div style={styles.iconCol}>{TYPE_ICONS[n.type] ?? 'ℹ️'}</div>
               <div style={{ flex: 1 }}>

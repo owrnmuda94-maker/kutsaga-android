@@ -1,49 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useKPIs } from '../../hooks/useKPIs';
 import { supabase } from '../../lib/supabase';
-import KPICard from '../../components/kpi/KPICard';
+import { calcAggregatedScore, getScoreColor } from '../../utils/kpiCalculations';
 import {
   BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 
+const AT_RISK_THRESHOLD = 3.5;
+
 export default function HODDashboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const [stats,       setStats]       = useState(null);
-  const [pendingKPIs, setPendingKPIs] = useState([]);
+  const { kpis: divisionKPIs, loading: kpisLoading } = useKPIs({ division: profile?.division });
   const [teamMembers, setTeamMembers] = useState([]);
-  const [loading,     setLoading]     = useState(true);
+  const [weeklyActivityCount, setWeeklyActivityCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!profile) return;
-    Promise.all([
-      fetchStats(),
-      fetchPending(),
-      fetchTeam(),
-    ]).finally(() => setLoading(false));
+    Promise.all([fetchTeam(), fetchWeeklyActivity()]).finally(() => setLoading(false));
   }, [profile]);
-
-  async function fetchStats() {
-    const { data } = await supabase
-      .from('kpis')
-      .select('status')
-      .eq('division', profile.division);
-    if (!data) return;
-    const s = { total: data.length, approved: 0, pending: 0, rejected: 0, achieved: 0 };
-    data.forEach(k => { if (s[k.status] !== undefined) s[k.status]++; });
-    setStats(s);
-  }
-
-  async function fetchPending() {
-    const { data } = await supabase
-      .from('kpis')
-      .select('*, owner:profiles!kpis_owner_id_fkey(id, full_name, role)')
-      .eq('division', profile.division)
-      .eq('status', 'pending_approval')
-      .order('created_at', { ascending: false });
-    setPendingKPIs(data ?? []);
-  }
 
   async function fetchTeam() {
     const { data } = await supabase
@@ -55,12 +33,59 @@ export default function HODDashboard() {
     setTeamMembers(data ?? []);
   }
 
-  const chartData = stats ? [
-    { name: 'Approved', value: stats.approved,  fill: '#27ae60' },
-    { name: 'Pending',  value: stats.pending,   fill: '#f39c12' },
-    { name: 'Achieved', value: stats.achieved,  fill: '#2980b9' },
-    { name: 'Rejected', value: stats.rejected,  fill: '#e74c3c' },
-  ] : [];
+  async function fetchWeeklyActivity() {
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const { count } = await supabase
+      .from('activities')
+      .select('id', { count: 'exact', head: true })
+      .gte('activity_date', weekStart.toISOString().slice(0, 10));
+    setWeeklyActivityCount(count ?? 0);
+  }
+
+  const memberScores = useMemo(() => {
+    const byOwner = {};
+    divisionKPIs.forEach(k => {
+      (byOwner[k.owner_id] ??= []).push(k);
+    });
+    return teamMembers
+      .map(m => {
+        const memberKPIs = byOwner[m.id] || [];
+        const scored = memberKPIs.filter(k => k.latest_score != null);
+        return {
+          ...m,
+          kpiCount: memberKPIs.length,
+          score: scored.length ? Number(calcAggregatedScore(scored)) : null,
+        };
+      })
+      .sort((a, b) => (a.score ?? -1) - (b.score ?? -1));
+  }, [divisionKPIs, teamMembers]);
+
+  const scoredMembers = memberScores.filter(m => m.score != null);
+  const divisionAvg = scoredMembers.length
+    ? Math.round(scoredMembers.reduce((s, m) => s + m.score, 0) / scoredMembers.length)
+    : null;
+
+  const distribution = useMemo(() => {
+    const scored = divisionKPIs.filter(k => k.latest_score != null);
+    const onTrack  = scored.filter(k => k.latest_score >= AT_RISK_THRESHOLD).length;
+    const atRisk   = scored.filter(k => k.latest_score < AT_RISK_THRESHOLD).length;
+    const unscored = divisionKPIs.length - scored.length;
+    return { onTrack, atRisk, unscored };
+  }, [divisionKPIs]);
+
+  const atRiskKPIs = useMemo(() => (
+    divisionKPIs
+      .filter(k => k.latest_score != null && k.latest_score < AT_RISK_THRESHOLD)
+      .sort((a, b) => a.latest_score - b.latest_score)
+      .slice(0, 5)
+  ), [divisionKPIs]);
+
+  const chartData = memberScores
+    .filter(m => m.score != null)
+    .map(m => ({ name: m.full_name.split(' ')[0], score: m.score, fill: getScoreColor(m.score * 6 / 100) }));
+
+  const isLoading = loading || kpisLoading;
 
   return (
     <div className="page">
@@ -70,47 +95,77 @@ export default function HODDashboard() {
       <h1 className="page-title">{profile?.full_name}</h1>
       <p className="text-sm text-secondary" style={{ marginBottom: '16px' }}>{profile?.division}</p>
 
-      {/* Division KPI chart */}
-      {!loading && stats && (
+      {/* Division attainment headline */}
+      <div className="card" style={styles.scoreCard}>
+        <p style={styles.scoreLabel}>Division KPI Attainment</p>
+        <p style={styles.scoreNum}>{divisionAvg != null ? `${divisionAvg}%` : '—'}</p>
+        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.75)' }}>
+          Average across {scoredMembers.length} scored team member{scoredMembers.length !== 1 ? 's' : ''}
+        </p>
+      </div>
+
+      {/* Performance distribution + engagement */}
+      <div className="grid-2" style={{ marginBottom: '16px' }}>
+        <div className="card" style={styles.statBox}>
+          <p style={{ ...styles.statNum, color: '#27ae60' }}>{distribution.onTrack}</p>
+          <p className="text-xs text-muted">KPIs On Track</p>
+        </div>
+        <div className="card" style={styles.statBox}>
+          <p style={{ ...styles.statNum, color: '#e74c3c' }}>{distribution.atRisk}</p>
+          <p className="text-xs text-muted">KPIs At Risk</p>
+        </div>
+        <div className="card" style={styles.statBox}>
+          <p style={{ ...styles.statNum, color: '#95a5a6' }}>{distribution.unscored}</p>
+          <p className="text-xs text-muted">Not Yet Scored</p>
+        </div>
+        <div className="card" style={styles.statBox}>
+          <p style={{ ...styles.statNum, color: 'var(--green-800)' }}>{weeklyActivityCount}</p>
+          <p className="text-xs text-muted">Activities This Week</p>
+        </div>
+      </div>
+
+      {/* Per-member score chart, worst-first */}
+      {!isLoading && chartData.length > 0 && (
         <div className="card" style={{ marginBottom: '16px' }}>
-          <h3 style={styles.sectionTitle}>Division KPI Overview</h3>
-          <div style={styles.statRow}>
-            <div style={styles.statBox}><p style={styles.statNum}>{stats.total}</p><p className="text-xs text-muted">Total</p></div>
-            <div style={styles.statBox}><p style={{ ...styles.statNum, color: '#27ae60' }}>{stats.approved}</p><p className="text-xs text-muted">Approved</p></div>
-            <div style={styles.statBox}><p style={{ ...styles.statNum, color: '#f39c12' }}>{stats.pending}</p><p className="text-xs text-muted">Pending</p></div>
-            <div style={styles.statBox}><p style={{ ...styles.statNum, color: '#e74c3c' }}>{stats.rejected}</p><p className="text-xs text-muted">Rejected</p></div>
-          </div>
+          <h3 style={styles.sectionTitle}>Team Attainment (lowest first)</h3>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={chartData} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-              <Tooltip />
-              <Bar dataKey="value" radius={[4,4,0,0]}>
-                {chartData.map((entry, i) => (
-                  <Cell key={i} fill={entry.fill} />
-                ))}
+              <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} />
+              <Tooltip formatter={v => `${v}%`} />
+              <Bar dataKey="score" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
       )}
 
-      {/* Pending approvals */}
-      {pendingKPIs.length > 0 && (
+      {/* At-risk KPIs shortlist */}
+      {atRiskKPIs.length > 0 && (
         <div style={{ marginBottom: '16px' }}>
-          <h3 style={{ ...styles.sectionTitle, marginBottom: '10px' }}>
-            🔔 Pending Approvals ({pendingKPIs.length})
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {pendingKPIs.map(kpi => (
-              <KPICard key={kpi.id} kpi={kpi} showOwner onPress={() => navigate('/kpis')} />
+          <h3 style={{ ...styles.sectionTitle, marginBottom: '10px' }}>⚠️ KPIs Needing Attention</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {atRiskKPIs.map(k => (
+              <div
+                key={k.id}
+                className="card"
+                style={{ ...styles.riskRow, cursor: 'pointer' }}
+                onClick={() => navigate(`/team/${k.owner_id}`)}
+              >
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: '14px', fontWeight: '700' }}>{k.title}</p>
+                  <p className="text-xs text-muted">{k.owner?.full_name}</p>
+                </div>
+                <span style={{ fontWeight: '800', color: getScoreColor(k.latest_score) }}>{k.latest_score}/6</span>
+              </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Team members */}
+      {/* Team members — clickable drill-down */}
       <div className="card" style={{ marginBottom: '16px' }}>
         <h3 style={{ ...styles.sectionTitle, marginBottom: '10px' }}>
           Team ({teamMembers.length})
@@ -119,13 +174,22 @@ export default function HODDashboard() {
           <p className="text-sm text-muted">No team members yet.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {teamMembers.map(m => (
-              <div key={m.id} style={styles.member}>
+            {memberScores.map(m => (
+              <div key={m.id} style={styles.member} onClick={() => navigate(`/team/${m.id}`)}>
                 <div style={styles.memberAvatar}>{m.full_name[0]}</div>
-                <div>
+                <div style={{ flex: 1 }}>
                   <p style={{ fontSize: '14px', fontWeight: '600' }}>{m.full_name}</p>
-                  <p className="text-xs text-muted">{m.role}</p>
+                  <p className="text-xs text-muted">{m.role} · {m.kpiCount} KPI{m.kpiCount !== 1 ? 's' : ''}</p>
                 </div>
+                <span
+                  style={{
+                    ...styles.scorePill,
+                    background: m.score != null ? getScoreColor(m.score * 6 / 100) : '#e0e0e0',
+                    color: m.score != null ? '#fff' : '#666',
+                  }}
+                >
+                  {m.score != null ? `${m.score}%` : '—'}
+                </span>
               </div>
             ))}
           </div>
@@ -145,16 +209,21 @@ export default function HODDashboard() {
 }
 
 const styles = {
+  scoreCard: { textAlign: 'center', marginBottom: '16px', background: 'var(--green-800)', color: '#fff', border: 'none' },
+  scoreLabel: { fontSize: '13px', color: 'rgba(255,255,255,0.8)', marginBottom: '4px' },
+  scoreNum: { fontSize: '40px', fontWeight: '800', color: '#fff' },
   sectionTitle: { fontSize: '15px', fontWeight: '700' },
-  statRow: { display: 'flex', gap: '8px', margin: '12px 0' },
-  statBox: { flex: 1, textAlign: 'center', background: 'var(--bg-page)', borderRadius: '8px', padding: '8px 4px' },
-  statNum: { fontSize: '22px', fontWeight: '800', color: 'var(--green-800)' },
-  actionRow: { display: 'flex', gap: '10px' },
-  member: { display: 'flex', alignItems: 'center', gap: '10px' },
+  statBox: { textAlign: 'center', padding: '12px 8px' },
+  statNum: { fontSize: '24px', fontWeight: '800' },
+  riskRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' },
+  member: { display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '4px 0' },
   memberAvatar: {
     width: '32px', height: '32px', borderRadius: '50%',
     background: 'var(--green-100)', color: 'var(--green-800)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontSize: '14px', fontWeight: '700', flexShrink: 0,
+  },
+  scorePill: {
+    fontSize: '12px', fontWeight: '700', borderRadius: '12px', padding: '3px 10px', flexShrink: 0,
   },
 };
